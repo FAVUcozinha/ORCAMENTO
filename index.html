@@ -1088,12 +1088,15 @@
         }
 
         // -----------------------------------------------------
-        // FUNÇÃO DE CRIAÇÃO DE TABELAS - AJUSTADA (sem QNT. MÍN.)
+        // FUNÇÃO DE CRIAÇÃO DE TABELAS - COM REVISÃO DE INSERÇÃO
         // -----------------------------------------------------
         function criarTabelaGrupo(grupo, idTabela, nomeGrupo) {
             const tbody = document.getElementById(idTabela).querySelector('tbody');
             if (!tbody) return;
 
+            // Limpa o tbody antes de preencher
+            tbody.innerHTML = '';
+            
             let grupoAtual = null;
             let countGrupo = 0;
 
@@ -1157,8 +1160,6 @@
                     } else {
                         tr.innerHTML = celulasAgrupadas;
                     }
-                    tbody.appendChild(tr);
-                    continue; // Pula para a próxima iteração
                 } else if (isCookieTable) {
                     // CÓDIGO PARA COOKIES (3 COLUNAS VISÍVEIS)
                     tr.innerHTML = `
@@ -1190,7 +1191,7 @@
                     `;
                 }
 
-                // Linha de inserção para itens NÃO AGRUPADOS (Doces, Cookies, Salgados)
+                // INSERÇÃO ÚNICA: Adiciona o elemento tr ao corpo da tabela
                 tbody.appendChild(tr);
             }
         }

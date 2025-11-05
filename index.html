@@ -1088,12 +1088,19 @@
         }
 
         // -----------------------------------------------------
-        // FUNÇÃO DE CRIAÇÃO DE TABELAS - COM REVISÃO DE INSERÇÃO
+        // FUNÇÃO DE CRIAÇÃO DE TABELAS - COM REFERÊNCIA ROBUSTA AO TBODY
         // -----------------------------------------------------
         function criarTabelaGrupo(grupo, idTabela, nomeGrupo) {
-            const tbody = document.getElementById(idTabela).querySelector('tbody');
-            if (!tbody) return;
+            const tabela = document.getElementById(idTabela);
+            if (!tabela) return;
 
+            // Garante que o tbody exista ou o cria
+            let tbody = tabela.querySelector('tbody');
+            if (!tbody) {
+                tbody = document.createElement('tbody');
+                tabela.appendChild(tbody);
+            }
+            
             // Limpa o tbody antes de preencher
             tbody.innerHTML = '';
             

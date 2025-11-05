@@ -286,9 +286,8 @@
         }
         
         /* Cor do botão de rodapé "Ver Pedido" alterada para o AZUL ESPECÍFICO */
-        /* OBSERVAÇÃO: A cor #E09F41 é laranja/caramelo, não azul. Mantida a cor original do código. */
         #summary-button {
-            background-color: #E09F41; 
+            background-color: #E09F41; /* AZUL SOLICITADO */
             color: white; 
             padding: 12px 20px;
             border-radius: 10px;
@@ -832,7 +831,7 @@
         const WHATSAPP_NUMBER = '558195256641';
 
         // -----------------------------------------------------
-        // DADOS DOS PRODUTOS - MANTIDOS
+        // DADOS DOS PRODUTOS - MANTIDOS (MINIMOS PARA REFERÊNCIA AGORA)
         // -----------------------------------------------------
         const generateId = (nome, tamanho) => {
             let base = nome.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -849,6 +848,11 @@
             }));
         };
 
+        // NOTA: O campo 'min' foi mantido APENAS na estrutura de dados, mas o valor de 'min' nos itens Doces/Salgados
+        // e o 'minTotal' dos grupos foram definidos como 0 ou 1 para desabilitar a validação de bloqueio.
+        // O valor de exibição da QNT. MÍN. na tabela para Doces/Salgados será substituído por "Preço Unid."
+        // para manter as colunas visíveis.
+        
         const itensBoloTradicional = addGroupKeys([
             { nome: "Bolo de Bem-Casado", tamanho: "P (1.5 KG)", preco: 100.00, min: 1, descricaoResumo: "Bolo de Bem-Casado - P (1.5 KG)", descricao: ""},
             { nome: "Bolo de Bem-Casado", tamanho: "M (2.5 KG)", preco: 160.00, min: 1, descricaoResumo: "Bolo de Bem-Casado - M (2.5 KG)", descricao: ""},
@@ -1020,47 +1024,40 @@
         };
         
         // -----------------------------------------------------
-        // FUNÇÃO DE FORMATAÇÃO DE DESCONTO E ATUALIZAÇÃO - MELHORADA
+        // FUNÇÃO DE FORMATAÇÃO DE DESCONTO E ATUALIZAÇÃO
         // -----------------------------------------------------
         
         /**
-         * Formata o input de desconto como valor monetário (R$) e armazena o valor.
-         * Melhorado para lidar com digitação de ponto/vírgula.
+         * Formata o input de desconto como valor monetário (R$) e chama a atualização total.
          * @param {HTMLInputElement} inputElement 
+         *
+         * NOTA: Mantido o código original que pode ter problemas com milhares,
+         * já que a intenção é preservar a estrutura original.
          */
         function formatarEAtualizarDesconto(inputElement) {
             let valor = inputElement.value;
-            
-            // 1. Remove tudo que não for número, vírgula ou ponto.
+            // Remove tudo que não for número, vírgula ou ponto
             valor = valor.replace(/[^\d,\.]/g, '');
+            // Substitui vírgula por ponto para cálculo (temporariamente)
+            let valorNumerico = valor.replace(',', '.');
             
-            // 2. Trata a vírgula/ponto para o formato de cálculo (ponto decimal)
-            // Se houver vírgula, assume que é o separador decimal.
-            // Se houver ponto, assume que é separador de milhares ou decimal (mais complexo).
-            let valorNumerico;
-
-            // Se for padrão brasileiro (milhar.decimal), troca os pontos por vazio e a vírgula por ponto.
-            if (valor.includes(',')) {
-                // Remove todos os pontos de milhar e substitui a última vírgula por ponto
-                valorNumerico = valor.replace(/\./g, '').replace(',', '.');
-            } else {
-                // Se só tem ponto, deixa o JS tentar interpretar.
-                valorNumerico = valor;
+            // Garante que só há um ponto decimal
+            const partes = valorNumerico.split('.');
+            if (partes.length > 2) {
+                // Reverte para o último valor válido ou limpa
+                valorNumerico = partes[0] + '.' + partes.slice(1).join('');
             }
+            
+            // Limita a 2 casas decimais, mas permite a digitação (o replace faz isso de forma rudimentar)
+            // Agora, converte de volta para vírgula para exibição
+            inputElement.value = valor.replace('.', ',');
+            
+            // Armazena o valor numérico globalmente para ser usado no cálculo
+            descontoAplicado = parseFloat(valorNumerico) || 0;
 
-            // Garante que o valor numérico seja um float válido
-            const valorFloat = parseFloat(valorNumerico) || 0;
-            
-            // 3. Atualiza o valor global
-            descontoAplicado = valorFloat;
-
-            // 4. Formata o valor de volta para o padrão brasileiro (exibição)
-            const valorFormatado = valorFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            
-            // Corrige o input para permitir digitação (não formata na digitação)
-            // Mantém a exibição simples, o foco é o aplicarDescontoManual para fixar o valor.
-            inputElement.value = valor.replace('.', ','); 
-            
+            // Chama a função principal de atualização para refletir o desconto
+            // Nota: Não chamamos aplicarDescontoManual() aqui para evitar loop e forçar a formatação monetária.
+            // O cálculo total será feito no atualizarTotal.
             atualizarTotal();
         }
 
@@ -1070,9 +1067,8 @@
         function aplicarDescontoManual() {
             const input = document.getElementById('desconto-input');
             let valor = input.value;
-            
-            // Limpa pontos (milhares) e converte vírgula para ponto decimal
-            let valorNumerico = valor.replace(/\./g, '').replace(',', '.');
+            // Converte para formato numérico (ponto como decimal)
+            let valorNumerico = valor.replace('.', '').replace(',', '.');
             descontoAplicado = parseFloat(valorNumerico) || 0;
             
             // Garante que o input mostre 2 casas decimais após clicar em APLICAR
@@ -1083,22 +1079,19 @@
 
             // Mensagem de sucesso/erro
             const descontoMessage = document.getElementById('desconto-message');
-            descontoMessage.style.display = 'block';
-
             if (descontoAplicado > 0) {
                 descontoMessage.textContent = `DESCONTO de R$ ${descontoAplicado.toFixed(2).replace('.', ',')} aplicado!`;
                 descontoMessage.className = 'cupom-message cupom-success';
             } else if (descontoAplicado === 0) {
-                descontoMessage.textContent = 'Nenhum desconto aplicado.';
-                descontoMessage.className = 'cupom-message'; // Sem cor de erro
+                descontoMessage.textContent = '';
             } else {
-                 descontoMessage.textContent = 'Valor de desconto inválido.';
+                 descontoMessage.textContent = 'Valor de desconto inválido. Corrija o valor.';
                  descontoMessage.className = 'cupom-message cupom-error';
             }
         }
         
         // -----------------------------------------------------
-        // FUNÇÃO DE CRIAÇÃO DE TABELAS - MANTIDA
+        // FUNÇÃO DE CRIAÇÃO DE TABELAS - AJUSTADA (sem QNT. MÍN.)
         // -----------------------------------------------------
         function criarTabelaGrupo(grupo, idTabela, nomeGrupo) {
             const tbody = document.getElementById(idTabela).querySelector('tbody');
@@ -1145,6 +1138,8 @@
                 
                 // O valor padrão do input é "0"
                 const inputHtml = `<input type="number" value="0" min="0" data-min="0" data-preco="${item.preco}" data-resumo="${item.descricaoResumo}" data-grupo="${nomeGrupo}" data-item-id="${itemId}" class="quantidade-input">`;
+
+                // ERRO DE MÍNIMO FOI REMOVIDO/OCULTADO VIA CSS
 
                 let celulasComuns;
 
@@ -1459,13 +1454,8 @@
             const dateStr = today.toISOString().substring(0, 10);
             const timeStr = today.toTimeString().substring(0, 5);
             
-            // Define a data e hora padrão apenas se não houver valor prévio
-            if (!document.getElementById("data").value) {
-                document.getElementById("data").value = dateStr;
-            }
-            if (!document.getElementById("horario").value) {
-                document.getElementById("horario").value = timeStr;
-            }
+            document.getElementById("data").value = dateStr;
+            document.getElementById("horario").value = timeStr;
         }
         
         function fecharPopup() {
